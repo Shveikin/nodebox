@@ -14,14 +14,29 @@
         // document.body.appendChild(nodebox())
 
         showDialog({
-            style: {background: '#222', color: "#fff"},
+            
+            style: {background: '#222', color: "#fff", width: 1000},
             title: 'Серия',
             message: nodebox(
                 [{
                     action: 'document',
-                    
+                    pos: [80,40],
+                    outputs: ['#.']
+                },{
+                    action: 'createArray',
+                    pos: [300,40],
+                    inputs: ['#"coloumns"', '"from_table"', '"where"', '"key"']
+                },{
+                    action: 'if',
+                    pos: [500,100],
+                    inputs: ['#1==1'],
+                    outputs: ['#true', '#false']
                 }]
-            )
+            , {
+                outputsFitst: false,
+                canAddArg: false,
+                zoom: 0.2
+            })
         });
     </script>
 </body>

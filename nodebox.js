@@ -76,7 +76,34 @@ function sha256(ascii) {
 };
 
 
-function nodebox(node_data = false){
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
+	settings
+	outputsFitst
+	canAddArg,
+	zoom
+
+*/
+
+
+
+
+
+
+function nodebox(node_data = false, settings = {}){
 	function createElement(tag, params = false){
 		const element = document.createElement(tag);
 		if (params) for (let i of Object.keys(params)) 
@@ -123,7 +150,10 @@ function nodebox(node_data = false){
 
 	// -----node-------------------------------------------------------------------------------------
 	// function _node(title, pos = false, outputs = false, inputs = false, dop = false){
-	function _node({action = 'output', pos = [0,0], outputs = false, inputs = ['#'], dop = false}){
+	function _node(nodex){ 
+		const {action = 'output', pos = [0,0], outputs = false, inputs = [], dop = false} = nodex
+
+
 
 		let bgcolor = '#'+(sha256(action.split('').reduce((summ, itm) => summ+itm.charCodeAt(0)*2, 0)).split('').map(itm => parseInt(itm)>2?itm:'').join('') + '344472').substr(0,6); //`#${randomRange(44,99)}${randomRange(44,99)}${randomRange(44,99)}`;
 		if (action in colorHash)
@@ -138,8 +168,7 @@ function nodebox(node_data = false){
 			top: '0px', 
 			fontSize: '13px', 
 			border: '1px solid #777', 
-			borderRadius: '3px', 
-			overflow: 'hidden',
+			borderRadius: '3px',
 			minWidth: '150px',
 			boxShadow: "0px 3px 17px #0000009c"
 		}})
@@ -219,9 +248,9 @@ function nodebox(node_data = false){
 		titleWrapper.appendChild(run)
 		titleWrapper.appendChild(_title)
 
-
+		let remove = false
 		if (dop?.dontRemove!=true){
-			const remove = createElement('span', {
+			remove = createElement('span', {
 				style: {
 					padding: '1px 5px',
 					color: '#fff',
@@ -311,19 +340,13 @@ function nodebox(node_data = false){
 				}
 			})
 
-			const connect = createElement('div', {
-				style: {
-					width: '5px',
-					width: '5px',
-
-				}
-			})
+			
 
 
 
 			const input = createElement('div', {
 				style: {
-					padding: '5px',
+					padding: '5px 7px 5px 7px',
 					color: '#fff',
 					background: output?'':"#686868",
 					border: output?'':'1px solid #444',
@@ -333,14 +356,18 @@ function nodebox(node_data = false){
 					outline: 'none',
 					marginRight: '1px',
 					flex: 1,
-					cursor: 'inherit'
+					cursor: 'inherit',
 				},
 				innerHTML: val,
 				contentEditable: true,
 				role: 'input'
 			})
-			
 
+
+
+
+
+			
 
 			if (!protect){
 				const btn = createElement('div', {
@@ -369,9 +396,35 @@ function nodebox(node_data = false){
 					inputWrapper.appendChild(btn)
 				}
 				
+
+				
 			} else {
 				inputWrapper.appendChild(input)
 			}
+
+
+			const connect = createElement('div', {
+				style: {
+					width: '8px',
+					height: '8px',
+					background: '#ccc',
+					position: 'absolute',
+					border: "1px solid #333",
+					borderRadius: '50%',
+					[!output?'left':'right']: '-7px',
+					top: "9px",
+					cursor: 'pointer'
+				},
+				onclick(){
+					console.log('output', output);
+					if (output){
+						console.log(nodeList)
+					} else {
+
+					}
+				}
+			})
+			inputWrapper.appendChild(connect)
 
 			return inputWrapper
 		}
@@ -394,41 +447,25 @@ function nodebox(node_data = false){
 				_inputs.appendChild(getInput(itm))
 			})
 
-		body.appendChild(_outputs)
-		body.appendChild(_inputs)
+		if (settings?.outputsFitst == true){
+			body.appendChild(_outputs)
+			body.appendChild(_inputs)
+		} else {
+			body.appendChild(_inputs)
+			body.appendChild(_outputs)
+		}
 
 
 		/// Add buttons
 
-		const buns_collection = createElement('div', {
-			style: {
-				display: 'flex'
-			}
-		})
+		if (settings?.canAddArg==true){
+			const buns_collection = createElement('div', {
+				style: {
+					display: 'flex'
+				}
+			})
 
-		const btn = createElement('div', {
-			style: {
-				padding: '1px 10px',
-				color: '#fff',
-				margin: "0",
-				background: "rgb(74 74 74)",
-				border: '1px solid #393939',
-				borderRadius: '3px',
-				cursor: 'pointer',
-				textAlign: 'center',
-				marginTop: '5px',
-				flex: '1'
-			},
-			innerHTML: 'in',
-		})
-		btn.onclick = () => _inputs.appendChild(getInput(''))
-
-		buns_collection.appendChild(btn)
-		
-
-
-		if (dop?.addButtons!='in'){
-			const btn2 = createElement('div', {
+			const btn = createElement('div', {
 				style: {
 					padding: '1px 10px',
 					color: '#fff',
@@ -441,18 +478,52 @@ function nodebox(node_data = false){
 					marginTop: '5px',
 					flex: '1'
 				},
-				innerHTML: 'out',
+				innerHTML: 'in',
 			})
-			btn2.onclick = () => _outputs.appendChild(getInput('', true))
-			buns_collection.appendChild(btn2)
+			btn.onclick = () => _inputs.appendChild(getInput(''))
+
+			buns_collection.appendChild(btn)
+			
+
+
+			if (dop?.addButtons!='in'){
+				const btn2 = createElement('div', {
+					style: {
+						padding: '1px 10px',
+						color: '#fff',
+						margin: "0",
+						background: "rgb(74 74 74)",
+						border: '1px solid #393939',
+						borderRadius: '3px',
+						cursor: 'pointer',
+						textAlign: 'center',
+						marginTop: '5px',
+						flex: '1'
+					},
+					innerHTML: 'out',
+				})
+				btn2.onclick = () => _outputs.appendChild(getInput('', true))
+				buns_collection.appendChild(btn2)
+			}
+
+
+			body.appendChild(buns_collection)
 		}
-
-
-		body.appendChild(buns_collection)
+		
 
 		_nd.appendChild(titleWrapper)
 		_nd.appendChild(body)
-		return _nd
+
+
+
+		const _return = {
+			node: _nd,
+			element: nodex,
+			run,
+			remove
+		}
+
+		return _return
 	}
 	// ------------------------------------------------------------------------------------------
 
@@ -489,7 +560,7 @@ function nodebox(node_data = false){
 
 
 
-
+	let zoom = settings?.zoom | 1;
 	const nodes = createElement('div', {
 		style: {
 			transformOrigin: "50%",
@@ -497,7 +568,8 @@ function nodebox(node_data = false){
 			top: -paddingx + 10 + 'px',
 			left: -paddingx + 10 + 'px',
 			padding: paddingx+'px',
-			background: `#222 url("data:image/svg+xml,%3Csvg version='1.2' baseProfile='tiny-ps' xmlns='http://www.w3.org/2000/svg' viewBox='1 1 8 8' width='10' height='10'%3E%3Ctitle%3EBackground%3C/title%3E%3Cstyle%3E tspan %7B white-space:pre %7D .shp0 %7B fill: %23333 %7D %3C/style%3E%3Cpath id='Background' class='shp0' d='M0 0L8 0L8 8L0 8L0 0Z' /%3E%3C/svg%3E")`
+			background: `#222 url("data:image/svg+xml,%3Csvg version='1.2' baseProfile='tiny-ps' xmlns='http://www.w3.org/2000/svg' viewBox='1 1 8 8' width='10' height='10'%3E%3Ctitle%3EBackground%3C/title%3E%3Cstyle%3E tspan %7B white-space:pre %7D .shp0 %7B fill: %23333 %7D %3C/style%3E%3Cpath id='Background' class='shp0' d='M0 0L8 0L8 8L0 8L0 0Z' /%3E%3C/svg%3E")`,
+			transform: `scale(${zoom})`
 		},
 	})
 
@@ -518,9 +590,10 @@ function nodebox(node_data = false){
 
 	// nodeList.push(_node('document', [0, 0], ['#.'],[]))
 
-	nodeList.map(_nd => nodes.appendChild(_nd))
+	nodeList.map(_nd => nodes.appendChild(_nd.node))
 
-	let zoom = 1;
+	
+
 	const field = createElement('div', {
 		style: {
 			position: 'relative',
@@ -539,6 +612,7 @@ function nodebox(node_data = false){
 					zoom-=0.04
 			}
 			nodes.style.transform = `scale(${zoom})`
+			return false
 		},
 		oncontextmenu: () => false
 	})
