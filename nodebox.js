@@ -102,13 +102,36 @@ function sha256(ascii) {
 
 
 
-
+let findConnections = false
 function nodebox(node_data = false, settings = {}){
-	function createElement(tag, params = false){
-		const element = document.createElement(tag);
-		if (params) for (let i of Object.keys(params)) 
-		if (i=='style') for (let j of Object.keys(params[i]))  element.style[j] = params[i][j]
-		else element[i] = params[i];
+	function createElement(element, params = false){
+		if (!(element instanceof HTMLElement))
+			element = document.createElement(element)
+		
+		
+		if (params) 
+        for (let i of Object.keys(params)) { 
+			// console.log(params[i])
+            if (i=='style') for (let j of Object.keys(params[i])) element.style[j] = params[i][j]
+			else if (i=='hover') {
+                let hoverstyle = '';
+                for (let j of Object.keys(params[i])) {
+                    hoverstyle += `${j}: ${params[i][j]};`
+                }
+                const xid = 'id' in params?params['id']:`d${Math.random()}`.replace('.','f__')
+                element.id = xid
+
+                hoverstyle = `#${xid}:hover {${hoverstyle}}`
+
+                const styleElement = document.createElement('style')
+                if (styleElement.styleSheet) {
+                    styleElement.styleSheet.cssText = hoverstyle;
+                } else {
+                    styleElement.appendChild(document.createTextNode(hoverstyle));
+                }
+                document.getElementsByTagName('head')[0].appendChild(styleElement)
+            } else element[i] = params[i];
+        } 
 		return element;
 	}
 
@@ -150,12 +173,18 @@ function nodebox(node_data = false, settings = {}){
 
 	// -----node-------------------------------------------------------------------------------------
 	// function _node(title, pos = false, outputs = false, inputs = false, dop = false){
+	
+	function bgHashColor(action){
+		return '#'+(sha256(action.split('').reduce((summ, itm) => summ+itm.charCodeAt(0)*2, 0)).split('').map(itm => parseInt(itm)>2?itm:'').join('') + '344472').substr(0,6); //`#${randomRange(44,99)}${randomRange(44,99)}${randomRange(44,99)}`;
+	}
+
 	function _node(nodex){ 
+		const node_id = '__n' + Math.random()
 		const {action = 'output', pos = [0,0], outputs = false, inputs = [], dop = false} = nodex
 
 
 
-		let bgcolor = '#'+(sha256(action.split('').reduce((summ, itm) => summ+itm.charCodeAt(0)*2, 0)).split('').map(itm => parseInt(itm)>2?itm:'').join('') + '344472').substr(0,6); //`#${randomRange(44,99)}${randomRange(44,99)}${randomRange(44,99)}`;
+		let bgcolor = bgHashColor(action)
 		if (action in colorHash)
 			bgcolor = colorHash[action]
 		else
@@ -276,12 +305,62 @@ function nodebox(node_data = false, settings = {}){
 			titleWrapper.appendChild(remove)
 		}
 
+		connect_out = createElement('span', {
+			style: {
+				padding: '1px 6px',
+				color: '#fff',
+				margin: "0",
+				background: "rgb(193 57 57)",
+				border: '1px solid #393939',
+				borderRadius: '50%',
+				cursor: 'pointer',
+				textAlign: 'center',
+				fontSize: '9px',
+				lineHeight: '16px',
+				cursor: 'pointer',
+				pointerEvents: 'auto',
+				display: 'none'
+			},
+			innerHTML: '◎',
+			onclick(){
+				if (findConnections) findConnections('@' + nodex.key)
+			}
+		})
+		titleWrapper.appendChild(connect_out)
+
+
+
+
+
+		const connect4inputs = createElement('span', {
+			style: {
+				padding: '1px 5px',
+				color: '#fff',
+				margin: "0",
+				background: "rgb(104 104 104 / 40%)",
+				border: '1px solid #393939',
+				borderRadius: '50%',
+				cursor: 'pointer',
+				textAlign: 'center',
+				fontSize: '9px',
+				lineHeight: '16px',
+				cursor: 'pointer',
+				pointerEvents: 'auto',
+				display: 'none'
+			},
+			innerHTML: '@',
+			onclick: () => {
+				alert('connect');
+			}
+		})
+		titleWrapper.appendChild(connect4inputs)
+		
+
+
 
 		//////////////////////////////////
 		// XX TITLE //////////////////////
 		//////////////////////////////////
-
-
 
 
 
@@ -324,8 +403,16 @@ function nodebox(node_data = false, settings = {}){
 
 
 
+		
+		function getInput({input_id, val, output = false}){
+			// console.log(input_id, val)
 
-		function getInput(val, output = false){
+			function getNodeById(___keyConnect){
+				return nodeList.filter((n) => {
+					return n.element.key == ___keyConnect
+				})[0]
+			}
+
 			let protect = false;
 			if (val[0]=='#'){
 				val = val.substr(1);
@@ -340,68 +427,112 @@ function nodebox(node_data = false, settings = {}){
 				}
 			})
 
-			
-
-
-
-			const input = createElement('div', {
-				style: {
-					padding: '5px 7px 5px 7px',
-					color: '#fff',
-					background: output?'':"#686868",
-					border: output?'':'1px solid #444',
-					textAlign: output?'right':'left',
-					borderRadius: '3px',
-					cursor: 'pointer',
-					outline: 'none',
-					marginRight: '1px',
-					flex: 1,
-					cursor: 'inherit',
-				},
-				innerHTML: val,
-				contentEditable: true,
-				role: 'input'
-			})
-
-
-
+			const line = createElement('div');
+			const input = createElement('div');
+			const btn = createElement('div');
 
 
 			
 
-			if (!protect){
-				const btn = createElement('div', {
+			nodes.appendChild(line)
+
+			function updateConnect(){
+				const __CONNECT = (val.substr(0,1)=='@');
+
+				let toNode = null;
+				if (__CONNECT){
+					toNode = getNodeById(val.substr(1))
+				}
+
+
+				
+
+
+				let lx1,ly1,lx2,ly2 = 0
+				if (__CONNECT){
+					lx1 = parseInt(toNode.node.style.left) + parseInt(toNode.node.offsetWidth)
+					ly1 = parseInt(toNode.node.style.top)
+					lx2 = parseInt(_nd.style.left)
+					ly2 = parseInt(_nd.style.top)
+				}
+				
+				
+				let log = `${lx1}<br>${ly1}<br>${lx2}<br>${ly2}`;
+
+				console.log(_nd)
+				console.log('NODESSSS',nodes)
+
+				createElement(line, {
+					style: {
+						width: '100px',
+						height: '100px',
+						background: '#f00',
+						position: 'absolute',
+						left: `${lx1}px`,
+						top: `${lx1}px`,
+						width: `${lx2 - lx1}px`,
+						height: `${ly2 - ly1}px`,
+						display: __CONNECT?'inline':'none'
+					},
+					innerHTML: log
+				})
+
+
+				const background_color = __CONNECT?bgHashColor(toNode.element.action):(output?'':"#686868")
+
+				createElement(input, {
+					style: {
+						padding: '5px 7px 5px 7px',
+						color: '#fff',
+						background: background_color,
+						border: output?'':'1px solid #444',
+						textAlign: output?'right':'left',
+						borderRadius: '3px',
+						cursor: 'pointer',
+						outline: 'none',
+						marginRight: '1px',
+						flex: 1,
+						cursor: 'inherit',
+					},
+					innerHTML: __CONNECT?toNode.element.action:val,
+					contentEditable: !__CONNECT,
+					role: 'input'
+				})
+
+				createElement(btn, {
 					style: {
 						padding: '2px 8px',
 						color: '#fff',
-						background: "#686868",
+						background: background_color,
 						border: '1px solid #444',
 						borderRadius: '3px',
 						cursor: 'pointer',
 						textAlign: 'center',
 						fontSize: '8px',
 						lineHeight: '21px',
+						display: protect & !__CONNECT?'none':'inline-block'
 					},
 					innerHTML: '⛌',
-					onclick: function(){
-						this.parentNode.remove()
-					}
+					onclick: __CONNECT?function(){
+						val = ''
+						updateConnect()
+					}:function(){this.parentNode.remove()}
 				})
+			}
+			updateConnect()
 
-				if (output){
-					inputWrapper.appendChild(btn)
-					inputWrapper.appendChild(input)
-				} else {
-					inputWrapper.appendChild(input)
-					inputWrapper.appendChild(btn)
-				}
-				
 
-				
+
+			if (output){
+				inputWrapper.appendChild(btn)
+				inputWrapper.appendChild(input)
 			} else {
 				inputWrapper.appendChild(input)
+				inputWrapper.appendChild(btn)
 			}
 
+			
+			// const connection
 
 			const connect = createElement('div', {
 				style: {
@@ -413,14 +544,51 @@ function nodebox(node_data = false, settings = {}){
 					borderRadius: '50%',
 					[!output?'left':'right']: '-7px',
 					top: "9px",
-					cursor: 'pointer'
+					cursor: 'pointer',
+					transition: 'all .3s'
 				},
-				onclick(){
-					console.log('output', output);
-					if (output){
-						console.log(nodeList)
-					} else {
+				hover: {
+					'background': '#cfc'
+				},
+				onclick: (event) => {
+					if (!findConnections){
+						// console.log('output', output);
+						if (output){
+							console.log('output');
+							console.log(nodeList)
+						} else {
+							// console.log('input');
+							// connect.style.background = '#f00'
+							// console.log(nodeList)
+							nodeList.map(itm => {
+								itm.remove.style.display = 'none'
+								itm.connect_out.style.display = 'inline-block'
+							})
 
+							
+
+						}
+
+						findConnections = (_node_id) => {
+							// connect.style.background = 'rgb(204, 204, 204)'
+							// input.innerHTML = _node_id
+							val = _node_id
+							if (output){
+								nodex.outputs[input_id] = _node_id
+							} else {
+								nodex.inputs[input_id] = _node_id
+							}
+							
+							findConnections = false
+							nodeList.map(itm => {
+								itm.remove.style.display = 'inline-block'
+								itm.connect_out.style.display = 'none'
+							})
+							updateConnect()
+							console.log(nodeList);
+						}
+
+						updateConnect()
 					}
 				}
 			})
@@ -438,13 +606,13 @@ function nodebox(node_data = false, settings = {}){
 		const _inputs = createElement('div')
 
 		if (outputs)
-			outputs.map(itm => {
-				_outputs.appendChild(getInput(itm, true))
+			outputs.map((itm, input_id) => {
+				_outputs.appendChild(getInput({input_id, val:itm, output: true}))
 			})
 
 		if (inputs)
-			inputs.map(itm => {
-				_inputs.appendChild(getInput(itm))
+			inputs.map((itm, input_id) => {
+				_inputs.appendChild(getInput({input_id, val :itm}))
 			})
 
 		if (settings?.outputsFitst == true){
@@ -476,11 +644,12 @@ function nodebox(node_data = false, settings = {}){
 					cursor: 'pointer',
 					textAlign: 'center',
 					marginTop: '5px',
-					flex: '1'
+					flex: '1',
+					marginRight: '2px'
 				},
 				innerHTML: 'in',
 			})
-			btn.onclick = () => _inputs.appendChild(getInput(''))
+			btn.onclick = () => alert('add function to add to stock');//_inputs.appendChild(getInput(''))
 
 			buns_collection.appendChild(btn)
 			
@@ -502,7 +671,7 @@ function nodebox(node_data = false, settings = {}){
 					},
 					innerHTML: 'out',
 				})
-				btn2.onclick = () => _outputs.appendChild(getInput('', true))
+				btn2.onclick = () => alert('аналогично')//_outputs.appendChild(getInput('', true))
 				buns_collection.appendChild(btn2)
 			}
 
@@ -520,7 +689,8 @@ function nodebox(node_data = false, settings = {}){
 			node: _nd,
 			element: nodex,
 			run,
-			remove
+			remove,
+			connect_out
 		}
 
 		return _return
@@ -582,17 +752,11 @@ function nodebox(node_data = false, settings = {}){
 	node_data.map(__nd => {
 		nodeList.push(_node(__nd))
 	})
-	// nodeList.push(_node('output', [460, 180], false, false, ['#'], {staticInputs: true, dontRemove: true}))
-	// nodeList.push(_node('Парсинг', [210, 0], false, false, {addButton: true}))
-	// nodeList.push(_node('Позиция', [210, 70], false, false, {addButton: true}))
 
 
-
-	// nodeList.push(_node('document', [0, 0], ['#.'],[]))
 
 	nodeList.map(_nd => nodes.appendChild(_nd.node))
 
-	
 
 	const field = createElement('div', {
 		style: {
@@ -619,12 +783,12 @@ function nodebox(node_data = false, settings = {}){
 
 	/////// DRAGG
 	dragElement(field, function(event){
-		if (nodeList.includes(event.target)){
+		if (nodeList.map(itm => itm.node).includes(event.target)){
 			nodeList.map(itm => {
-				if (itm!=event.target)
-					itm.style.zIndex = 1
+				if (itm.node!=event.target)
+					itm.node.style.zIndex = 1
 				else
-					itm.style.zIndex = 100
+					itm.node.style.zIndex = 100
 			})
 			return {
 				mousemove: (sx, sy, event) => {
@@ -633,9 +797,8 @@ function nodebox(node_data = false, settings = {}){
 				}
 			}
 		}
-		// if (event.buttons==2){
+		// if (event.buttons==2)
 		if (event.target==nodes){
-
 			return {
 				mousemove: (sx, sy, event) => {
 					nodes.style.left = (parseInt(nodes.style.left) + sx) + 'px'

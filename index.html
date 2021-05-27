@@ -13,6 +13,8 @@
     <script>
         // document.body.appendChild(nodebox())
 
+
+
         showDialog({
             
             style: {background: '#222', color: "#fff", width: 1000},
@@ -21,20 +23,29 @@
                 [{
                     action: 'document',
                     pos: [80,40],
-                    outputs: ['#.']
+                    outputs: ['#.'],
+                    key: '992'
                 },{
                     action: 'createArray',
                     pos: [300,40],
-                    inputs: ['#"coloumns"', '"from_table"', '"where"', '"key"']
+                    inputs: ['#"coloumns"', '"from_table"', '@992', '"key"'],
+                    key: Math.random()
                 },{
                     action: 'if',
                     pos: [500,100],
                     inputs: ['#1==1'],
-                    outputs: ['#true', '#false']
+                    outputs: ['#true', '#false'],
+                    key: Math.random()
+                },{
+                    action: 'if',
+                    pos: [700,100],
+                    inputs: ['#1==1'],
+                    outputs: ['#true', '#false'],
+                    key: Math.random()
                 }]
             , {
                 outputsFitst: false,
-                canAddArg: false,
+                canAddArg: true,
                 zoom: 0.2
             })
         });
